@@ -1,5 +1,5 @@
 <?php 
-
+require_once 'lib/vendor/autoload.php';
 include_once 'headers.php';
 include_once 'configuracion.php';
 
@@ -11,6 +11,15 @@ class EnvioNotificacionResultado {
 $response = new EnvioNotificacionResultado;
 $response->code = "OK";
 $response->message = "Enviado correctamente";
+
+//API V1 (NEW)
+function getAccessToken(){
+    $client = new Google\Client();
+    $client->setAuthConfig('DIRCREDENCIALES/service-account.json');
+    $client->addScope('https://www.googleapis.com/auth/firebase.messaging');
+    $accessToken = $client->fetchAccessTokenWithAssertion()["access_token"];
+    return $accessToken;
+}
 
 try{
 
@@ -49,18 +58,33 @@ try{
             $notification["title"] = $titulo;
             $notification["body"] = $mensaje;
 
-            $fields = array(
+            //API LEGACY (OLD)
+            /*$fields = array(
                 'registration_ids' => $registatoin_ids,
                 'notification' => $notification,
                 //'data' => $datos,
                 'direct_book_ok' => true
+            );*/
+
+            //API V1 (NEW)
+            $fields["message"] = array(
+                'token' => $registatoin_ids[0],
+                'notification' => $notification,
+                //'data' => $datos,
             );
 
-
-            $url = 'https://fcm.googleapis.com/fcm/send';
+            //API LEGACY (OLD)
+            //$url = 'https://fcm.googleapis.com/fcm/send';
             // Your Firebase Server API Key
-            $headers = array( "authorization: key=".FCM_APIKEY.""
-            ,"content-type: application/json");
+            //$headers = array( "authorization: key=".FCM_APIKEY.""
+            //,"content-type: application/json");
+
+            //API V1 (NEW)
+            $url = 'https://fcm.googleapis.com/v1/projects/15245642154521/messages:send';            
+            $accessToken = getAccessToken();
+            $headers = array( "Authorization: Bearer ".$accessToken.""
+            ,"content-type: application/json;UTF-8");
+
 
             // Open curl connection
             $ch = curl_init();
